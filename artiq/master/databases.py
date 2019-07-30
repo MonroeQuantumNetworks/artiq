@@ -58,6 +58,9 @@ class DatasetDB(TaskObject):
         finally:
             self.save()
 
+    def get_dataset_db(self):
+        return list(self.data.read.keys())
+
     def get(self, key):
         return self.data.read[key][1]
 

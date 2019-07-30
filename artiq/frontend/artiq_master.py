@@ -111,6 +111,7 @@ def main():
     worker_handlers.update({
         "get_device_db": device_db.get_device_db,
         "get_device": device_db.get,
+        "get_dataset_db": dataset_db.get_dataset_db,
         "get_dataset": dataset_db.get,
         "update_dataset": dataset_db.update,
         "scheduler_submit": scheduler.submit,

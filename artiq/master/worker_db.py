@@ -152,6 +152,10 @@ class DatasetManager:
                 index = slice(*index)
         setitem(target, index, value)
 
+    def get_dataset_db(self):
+        """Returns the keys of the dataset database."""
+        return self.ddb.get_dataset_db()
+
     def get(self, key, archive=False):
         if key in self.local:
             return self.local[key]
