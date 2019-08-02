@@ -158,6 +158,10 @@ class DatasetManager:
     def append_to(self, key, value):
         self._get_mutation_target(key).append(value)
 
+    def get_dataset_db(self):
+        """Returns the keys of the dataset database."""
+        return self.ddb.get_dataset_db()
+
     def get(self, key, archive=False):
         if key in self.local:
             return self.local[key]

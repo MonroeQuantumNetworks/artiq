@@ -274,6 +274,10 @@ class HasEnvironment:
         """Returns the full contents of the device database."""
         return self.__device_mgr.get_device_db()
 
+    def get_dataset_db(self):
+        """Returns the keys of the dataset database."""
+        return self.__dataset_mgr.get_dataset_db()
+
     def get_device(self, key):
         """Creates and returns a device driver."""
         return self.__device_mgr.get(key)

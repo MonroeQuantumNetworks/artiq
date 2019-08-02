@@ -65,6 +65,7 @@ class ParentDeviceDB:
 
 
 class ParentDatasetDB:
+    get_dataset_db = make_parent_action("get_dataset_db")
     get = make_parent_action("get_dataset")
     update = make_parent_action("update_dataset")
 
@@ -157,6 +158,10 @@ class ExamineDatasetMgr:
     @staticmethod
     def update(self, mod):
         pass
+
+    @staticmethod
+    def get_dataset_db():
+        return ParentDatasetDB.get_dataset_db()
 
 
 def examine(device_mgr, dataset_mgr, file):

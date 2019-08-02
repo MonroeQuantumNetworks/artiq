@@ -384,6 +384,9 @@ class LocalDatasetDB:
     def init(self, data):
         self._data = data
 
+    def get_dataset_db(self):
+        return list(self._data.backing_store.keys())
+
     def get(self, key):
         return self._data.backing_store[key][1]
 
@@ -406,6 +409,7 @@ class ExperimentsArea(QtWidgets.QMdiArea):
         self.worker_handlers = {
             "get_device_db": lambda: {},
             "get_device": lambda k: {"type": "dummy"},
+            "get_dataset_db": self._ddb.get_dataset_db,
             "get_dataset": self._ddb.get,
             "update_dataset": self._ddb.update,
         }
