@@ -1,5 +1,5 @@
-# conda description for an environment to build and develop artiq
-# $ conda env create -f conda/artiq-dev.yaml
+# conda description for an environment to install ARTIQ without dev support
+# $ conda env create -f conda/artiq.yaml
 name: artiq
 channels:
   - m-labs/label/main
