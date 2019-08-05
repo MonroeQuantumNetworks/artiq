@@ -662,67 +662,7 @@ class Satellite(SatelliteBase):
         self.add_rtio(self.rtio_channels)
 
 
-class VLBAIMaster(_MasterBase):
-    def __init__(self, hw_rev=None, *args, **kwargs):
-        if hw_rev is None:
-            hw_rev = "v1.1"
-        _MasterBase.__init__(self, rtio_clk_freq=125e6, hw_rev=hw_rev, *args,
-                             **kwargs)
-
-        self.rtio_channels = []
-        eem.DIO.add_std(self, 0,
-            ttl_serdes_7series.InOut_8X, ttl_serdes_7series.Output_8X)
-        eem.DIO.add_std(self, 1,
-            ttl_serdes_7series.Output_8X, ttl_serdes_7series.Output_8X)
-        eem.DIO.add_std(self, 2,
-            ttl_serdes_7series.Output_8X, ttl_serdes_7series.Output_8X)
-        eem.Sampler.add_std(self, 3, None, ttl_serdes_7series.Output_8X)
-        eem.Urukul.add_std(self, 5, 4, ttl_serdes_7series.Output_8X)
-        eem.Urukul.add_std(self, 6, None, ttl_serdes_7series.Output_8X)
-
-        for i in (0, 1):
-            phy = ttl_simple.Output(self.platform.request("user_led", i))
-            self.submodules += phy
-            self.rtio_channels.append(rtio.Channel.from_phy(phy))
-
-        eem.Zotino.add_std(self, 7, ttl_serdes_7series.Output_8X)
-
-        self.config["HAS_RTIO_LOG"] = None
-        self.config["RTIO_LOG_CHANNEL"] = len(self.rtio_channels)
-        self.rtio_channels.append(rtio.LogChannel())
-
-        self.add_rtio(self.rtio_channels)
-
-
-class VLBAISatellite(_SatelliteBase):
-    def __init__(self, hw_rev=None, *args, **kwargs):
-        if hw_rev is None:
-            hw_rev = "v1.1"
-        _SatelliteBase.__init__(self, rtio_clk_freq=125e6, hw_rev=hw_rev,
-                                *args, **kwargs)
-
-        self.rtio_channels = []
-        eem.DIO.add_std(self, 0,
-            ttl_serdes_7series.InOut_8X, ttl_serdes_7series.Output_8X)
-        eem.DIO.add_std(self, 1,
-            ttl_serdes_7series.Output_8X, ttl_serdes_7series.Output_8X)
-        eem.DIO.add_std(self, 2,
-            ttl_serdes_7series.Output_8X, ttl_serdes_7series.Output_8X)
-        eem.Sampler.add_std(self, 3, None, ttl_serdes_7series.Output_8X)
-        eem.Urukul.add_std(self, 5, 4, ttl_serdes_7series.Output_8X)
-        eem.Urukul.add_std(self, 6, None, ttl_serdes_7series.Output_8X)
-
-        for i in (0, 1):
-            phy = ttl_simple.Output(self.platform.request("user_led", i))
-            self.submodules += phy
-            self.rtio_channels.append(rtio.Channel.from_phy(phy))
-
-        eem.Zotino.add_std(self, 7, ttl_serdes_7series.Output_8X)
-
-        self.add_rtio(self.rtio_channels)
-
-
-class Monroe_IonPhoton(_StandaloneBase):
+class Monroe_IonPhoton(StandaloneBase):
     """
     Modified from Opticlock
     Kasli build for University of Maryland, Monroe Group, Ion-Photon quantum networking project
@@ -731,10 +671,11 @@ class Monroe_IonPhoton(_StandaloneBase):
     def __init__(self, hw_rev=None, **kwargs):
         if hw_rev is None:
             hw_rev = "v1.0"
-        _StandaloneBase.__init__(self, hw_rev=hw_rev, **kwargs)
+        StandaloneBase.__init__(self, hw_rev=hw_rev, **kwargs)
 
         self.config["SI5324_AS_SYNTHESIZER"] = None
         self.config["SI5324_EXT_REF"] = None
+        self.config["EXT_REF_FREQUENCY"] = "100.0"
         self.config["RTIO_FREQUENCY"] = "125.0"
         if hw_rev == "v1.0":
             # EEM clock fan-out from Si5324, not MMCX
@@ -746,8 +687,8 @@ class Monroe_IonPhoton(_StandaloneBase):
         eem.DIO.add_std(self, 1,
             ttl_serdes_7series.Output_8X, ttl_serdes_7series.Output_8X)
         eem.Urukul.add_std(self, 2, 3, ttl_serdes_7series.Output_8X)
-        eem.Urukul.add_std(self, 4, 5, ttl_serdes_7series.Output_8X)  #, ttl_simple.ClockGen)
-        eem.Urukul.add_std(self, 6, 7, ttl_serdes_7series.Output_8X)  #, ttl_simple.ClockGen)
+        eem.Urukul.add_std(self, 4, 5, ttl_serdes_7series.Output_8X)  #, ttl_simple.ClockGen)  # for sync?
+        eem.Urukul.add_std(self, 6, 7, ttl_serdes_7series.Output_8X)  #, ttl_simple.ClockGen)  # for sync?
 
         for i in (1, 2):
             sfp_ctl = self.platform.request("sfp_ctl", i)
@@ -763,9 +704,8 @@ class Monroe_IonPhoton(_StandaloneBase):
 
 
 VARIANTS = {cls.__name__.lower(): cls for cls in [
-    Opticlock, SUServo, PTB, PTB2, HUB, LUH,
-    SYSU, MITLL, MITLL2, USTC, Tsinghua, Tsinghua2, WIPM, NUDT,
-    VLBAIMaster, VLBAISatellite, Tester, Master, Satellite, Monroe_IonPhoton]}
+    Opticlock, SUServo,
+    Tester, Master, Satellite, Monroe_IonPhoton]}
 
 
 def main():
