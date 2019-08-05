@@ -1,7 +1,7 @@
 from artiq.language.core import kernel, delay, portable, at_mu, now_mu
 from artiq.language.units import us, ms
 
-from numpy import int32
+from numpy import int32, int64
 
 from artiq.coredevice import spi2 as spi
 
@@ -175,7 +175,7 @@ class CPLD:
         self.cfg_reg = urukul_cfg(rf_sw=rf_sw, led=0, profile=0,
                                   io_update=0, mask_nu=0, clk_sel=clk_sel,
                                   sync_sel=sync_sel, rst=0, io_rst=0)
-        self.att_reg = int32(att)
+        self.att_reg = int32(int64(att))
         self.sync_div = sync_div
 
     @kernel
@@ -327,7 +327,7 @@ class CPLD:
         and align it to the current RTIO timestamp.
 
         The SYNC_IN signal is derived from the coarse RTIO clock
-        and the divider must be a power of two two.
+        and the divider must be a power of two.
         Configure ``sync_sel == 0``.
 
         :param div: SYNC_IN frequency divider. Must be a power of two.

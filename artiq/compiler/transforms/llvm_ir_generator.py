@@ -1332,7 +1332,7 @@ class LLVMIRGenerator:
             llargptr = self.llbuilder.gep(llargs, [ll.Constant(lli32, index)])
             self.llbuilder.store(llargslot, llargptr)
 
-        if fun_type.async:
+        if fun_type.is_async:
             self.llbuilder.call(self.llbuiltin("rpc_send_async"),
                                 [llservice, lltagptr, llargs])
         else:
@@ -1342,7 +1342,7 @@ class LLVMIRGenerator:
         # Don't waste stack space on saved arguments.
         self.llbuilder.call(self.llbuiltin("llvm.stackrestore"), [llstackptr])
 
-        if fun_type.async:
+        if fun_type.is_async:
             # If this RPC is called using an `invoke` ARTIQ IR instruction, there will be
             # no other instructions in this basic block. Since this RPC is async, it cannot
             # possibly raise an exception, so add an explicit jump to the normal successor.
@@ -1556,6 +1556,11 @@ class LLVMIRGenerator:
             lleltsptr = llglobal.bitcast(lleltsary.type.element.as_pointer())
             llconst   = ll.Constant(llty, [lleltsptr, ll.Constant(lli32, len(llelts))])
             return llconst
+        elif types.is_tuple(typ):
+            assert isinstance(value, tuple), fail_msg
+            llelts = [self._quote(v, t, lambda: path() + [str(i)])
+                for i, (v, t) in enumerate(zip(value, typ.elts))]
+            return ll.Constant(llty, llelts)
         elif types.is_rpc(typ) or types.is_c_function(typ) or types.is_builtin_function(typ):
             # RPC, C and builtin functions have no runtime representation.
             return ll.Constant(llty, ll.Undefined)

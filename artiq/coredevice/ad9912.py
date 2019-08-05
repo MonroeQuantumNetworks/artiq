@@ -1,7 +1,7 @@
 from numpy import int32, int64
 
 from artiq.language.core import kernel, delay, portable
-from artiq.language.units import us, ns
+from artiq.language.units import ms, us, ns
 from artiq.coredevice.ad9912_reg import *
 
 from artiq.coredevice import spi2 as spi
@@ -107,6 +107,7 @@ class AD9912:
         # I_cp = 375 µA, VCO high range
         self.write(AD9912_PLLCFG, 0b00000101, length=1)
         self.cpld.io_update.pulse(2*us)
+        delay(1*ms)
 
     @kernel
     def set_att_mu(self, att):

@@ -256,9 +256,11 @@ class AD9910:
         self.write32(_AD9910_REG_CFR1, 0x00000002 | (bits << 4))
         self.cpld.io_update.pulse(1*us)
 
+    # KLUDGE: ref_time default argument is explicitly marked int64() to avoid
+    # silent truncation of explicitly passed timestamps. (Compiler bug?)
     @kernel
     def set_mu(self, ftw, pow=0, asf=0x3fff, phase_mode=_PHASE_MODE_DEFAULT,
-               ref_time=-1, profile=0):
+               ref_time=int64(-1), profile=0):
         """Set profile 0 data in machine units.
 
         This uses machine units (FTW, POW, ASF). The frequency tuning word
@@ -285,8 +287,9 @@ class AD9910:
         """
         if phase_mode == _PHASE_MODE_DEFAULT:
             phase_mode = self.phase_mode
-        # Align to coarse RTIO which aligns SYNC_CLK
-        at_mu(now_mu() & ~0xf)
+        # Align to coarse RTIO which aligns SYNC_CLK. I.e. clear fine TSC
+        # This will not cause a collision or sequence error.
+        at_mu(now_mu() & ~7)
         if phase_mode != PHASE_MODE_CONTINUOUS:
             # Auto-clear phase accumulator on IO_UPDATE.
             # This is active already for the next IO_UPDATE
@@ -302,8 +305,8 @@ class AD9910:
                 pow += dt*ftw*self.sysclk_per_mu >> 16
         self.write64(_AD9910_REG_PROFILE0 + profile, (asf << 16) | pow, ftw)
         delay_mu(int64(self.io_update_delay))
-        self.cpld.io_update.pulse_mu(8)  # assumes 8 mu > t_SYSCLK
-        at_mu(now_mu() & ~0xf)
+        self.cpld.io_update.pulse_mu(8)  # assumes 8 mu > t_SYN_CCLK
+        at_mu(now_mu() & ~7)  # clear fine TSC again
         if phase_mode != PHASE_MODE_CONTINUOUS:
             self.write32(_AD9910_REG_CFR1, 0x00000002)
             # future IO_UPDATE will activate
@@ -335,7 +338,7 @@ class AD9910:
 
     @kernel
     def set(self, frequency, phase=0.0, amplitude=1.0,
-            phase_mode=_PHASE_MODE_DEFAULT, ref_time=-1, profile=0):
+            phase_mode=_PHASE_MODE_DEFAULT, ref_time=int64(-1), profile=0):
         """Set profile 0 data in SI units.
 
         .. seealso:: :meth:`set_mu`
@@ -424,9 +427,11 @@ class AD9910:
         This method first locates a valid SYNC_IN delay at zero validation
         window size (setup/hold margin) by scanning around `search_seed`. It
         then looks for similar valid delays at successively larger validation
-        window sizes until none can be found. It then deacreses the validation
+        window sizes until none can be found. It then decreases the validation
         window a bit to provide some slack and stability and returns the
         optimal values.
+
+        This method and :meth:`tune_io_update_delay` can be run in any order.
 
         :param search_seed: Start value for valid SYNC_IN delay search.
             Defaults to 15 (half range).
@@ -453,7 +458,7 @@ class AD9910:
                 # integrate SMP_ERR statistics for a few hundred cycles
                 delay(100*us)
                 err = urukul_sta_smp_err(self.cpld.sta_read())
-                delay(40*us)  # slack
+                delay(100*us)  # slack
                 if not (err >> (self.chip_select - 4)) & 1:
                     next_seed = in_delay
                     break
@@ -496,16 +501,17 @@ class AD9910:
         self.write32(_AD9910_REG_RAMP_RATE, 0x00010000)
         # dFTW = 1, (work around negative slope)
         self.write64(_AD9910_REG_RAMP_STEP, -1, 0)
-        # delay io_update after RTIO/2 edge
-        t = now_mu() + 0x10 & ~0xf
+        # delay io_update after RTIO edge
+        t = now_mu() + 8 & ~7
         at_mu(t + delay_start)
-        self.cpld.io_update.pulse_mu(32 - delay_start)  # realign
+        # assumes a maximum t_SYNC_CLK period
+        self.cpld.io_update.pulse_mu(16 - delay_start)  # realign
         # disable DRG autoclear and LRR on io_update
         self.write32(_AD9910_REG_CFR1, 0x00000002)
         # stop DRG
         self.write64(_AD9910_REG_RAMP_STEP, 0, 0)
         at_mu(t + 0x1000 + delay_stop)
-        self.cpld.io_update.pulse_mu(32 - delay_stop)  # realign
+        self.cpld.io_update.pulse_mu(16 - delay_stop)  # realign
         ftw = self.read32(_AD9910_REG_FTW)  # read out effective FTW
         delay(100*us)  # slack
         # disable DRG
@@ -524,6 +530,8 @@ class AD9910:
 
         This method assumes that the IO_UPDATE TTLOut device has one machine
         unit resolution (SERDES).
+
+        This method and :meth:`tune_sync_delay` can be run in any order.
 
         :return: Stable IO_UPDATE delay to be passed to the constructor
             :class:`AD9910` via the device database.

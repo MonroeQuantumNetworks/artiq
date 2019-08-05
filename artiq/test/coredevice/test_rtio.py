@@ -248,12 +248,13 @@ class LoopbackGateTiming(EnvExperiment):
         gate_end_mu = now_mu()
 
         # gateware latency offset between gate and input
-        lat_offset = 12*8
+        lat_offset = 11*8
         out_mu = gate_start_mu - loop_delay_mu + lat_offset
         at_mu(out_mu)
         self.loop_out.pulse_mu(24)
 
         in_mu = self.loop_in.timestamp_mu(gate_end_mu)
+        print("timings: ", gate_start_mu, in_mu - lat_offset, gate_end_mu)
         if in_mu < 0:
             raise PulseNotReceived()
         if not (gate_start_mu <= (in_mu - lat_offset) <= gate_end_mu):
